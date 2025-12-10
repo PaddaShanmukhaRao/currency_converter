@@ -1,0 +1,51 @@
+on:
+  pull_request:
+    branches:
+      - main
+      - master
+  push:
+    branches:
+      - main
+      - master
+      - develop
+
+name: "Build Android Release" # Changed name to be more specific
+
+jobs:
+  build_android: # Changed job name
+    name: Build Android APK
+    runs-on: ubuntu-latest # Changed to ubuntu-latest for faster/cheaper Android builds
+    steps:
+      - uses: actions/checkout@v1
+      
+      # Setting up Java is no longer strictly required by Flutter >= 2.0.0
+      # but keeping it doesn't hurt, though typically 'v1' is very old.
+      # You might want to update to 'v2' or 'v3' if you keep it.
+      - uses: actions/setup-java@v1
+        with:
+          java-version: '12.x' # Consider updating this if needed for newer Flutter versions
+
+      - uses: subosito/flutter-action@v1
+        with:
+          flutter-version: '3.38.1'
+          
+      - name: Get Flutter dependencies
+        run: flutter pub get
+        
+      - name: Run Flutter tests (Optional)
+        run: flutter test
+        
+      - name: Build Android APK
+        # Build for debug/testing, keeping your original command. 
+        # For a true "release," you'd typically use 'release' instead of 'debug'.
+        run: flutter build apk --debug --split-per-abi 
+        
+      # --- Removed all iOS build and ipa packaging steps ---
+
+      - name: Upload APKs to Release
+        uses: ncipollo/release-action@v1
+        with:
+          # Only include the Android APK artifacts
+          artifacts: "build/app/outputs/apk/debug/*" 
+          tag: v1.0.${{ github.run_number }}
+          token: ${{ secrets.TOKEN }}

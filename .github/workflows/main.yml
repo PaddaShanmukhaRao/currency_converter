@@ -9,41 +9,33 @@ on:
       - master
       - develop
 
-name: "Build Android Release" # Changed name to be more specific
+name: "Build Android Release"
 
 jobs:
-  build_android: # Changed job name
+  build_android:
     name: Build Android APK
-    runs-on: ubuntu-latest # Changed to ubuntu-latest for faster/cheaper Android builds
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4 # Updated to v4 (standard practice)
       
-      # Setting up Java is no longer strictly required by Flutter >= 2.0.0
-      # but keeping it doesn't hurt, though typically 'v1' is very old.
-      # You might want to update to 'v2' or 'v3' if you keep it.
-      - uses: actions/setup-java@v1
+      - uses: actions/setup-java@v4 # Updated to v4
         with:
-          java-version: '12.x' # Consider updating this if needed for newer Flutter versions
+          distribution: 'temurin' # 'temurin' is the standard OpenJDK distribution
+          java-version: '17'      # FIX: Updated from 12 to 17 to match Gradle requirements
 
-      - uses: subosito/flutter-action@v1
+      - uses: subosito/flutter-action@v2 # Updated to v2 for better caching/performance
         with:
           flutter-version: '3.38.1'
           
       - name: Get Flutter dependencies
         run: flutter pub get
-
         
       - name: Build Android APK
-        # Build for debug/testing, keeping your original command. 
-        # For a true "release," you'd typically use 'release' instead of 'debug'.
         run: flutter build apk --debug --split-per-abi 
-        
-      # --- Removed all iOS build and ipa packaging steps ---
 
       - name: Upload APKs to Release
         uses: ncipollo/release-action@v1
         with:
-          # Only include the Android APK artifacts
           artifacts: "build/app/outputs/apk/debug/*" 
           tag: v1.0.${{ github.run_number }}
           token: ${{ secrets.TOKEN }}

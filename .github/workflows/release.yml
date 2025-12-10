@@ -1,48 +1,48 @@
+name: Build APK and Release
+
 on:
-  pull_request:
-    branches:
-      - main
-      - master
   push:
     branches:
-      - main
-      - master
-      - develop
-name: "Build & Release"
+      - main   # change this if needed
+
 jobs:
-  build:
-    name: Build & Release
-    runs-on: macos-latest
+  build-and-release:
+    runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-java@v1
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
         with:
-          java-version: '12.x'
-      - uses: subosito/flutter-action@v1
+          flutter-version: '3.38.1'   # FIX: explicitly specify version
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Create GitHub release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
         with:
-          flutter-version: '2.2.0'
-      - run: flutter pub get
-      - run: flutter test
-      - run: flutter build apk --debug --split-per-abi
-      - run: |
-          flutter build ios --no-codesign
-          cd build/ios/iphoneos
-          mkdir Payload
-          cd Payload
-          ln -s ../Runner.app
-          cd ..
-          zip -r app.ipa Payload
-      - name: Push to Releases
-        uses: ncipollo/release-action@v1
+          tag_name: v${{ github.run_number }}
+          release_name: Release v${{ github.run_number }}
+          body: Automated build from commit ${{ github.sha }}
+          draft: false
+          prerelease: false
+
+      - name: Upload APK to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
         with:
-          artifacts: "build/app/outputs/apk/debug/*,build/ios/iphoneos/app.ipa"
-          tag: v1.0.${{ github.run_number }}
-          token: ${{ secrets.TOKEN }}
-
-
-
-
-
-
-# push to master, main, develop
-# pull request on main master
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: build/app/outputs/flutter-apk/app-release.apk
+          asset_name: currency_converter-${{ github.run_number }}.apk
+          asset_content_type: application/vnd.android.package-archive

@@ -47,7 +47,7 @@ class _CurrencyConverterState extends State<CurrencyConverter> {
               child: ElevatedButton(
                 onPressed: () {
                   setState(() {
-                    result = double.parse(textEditingController.text)*81;
+                    result = double.parse(textEditingController.text)*89;
                   });
                   },
                 style: ButtonStyle(
